@@ -201,7 +201,7 @@ class RobotsTxt extends EventEmitter
               txt=txtA.join ''
               # console.log "SETTING #{this.cache_key(@url)}"
               if @redis_instance
-                console.log @redis_key_ttl
+                console.log "TTL: #{@redis_key_ttl}"
                 @redis_instance.setex this.cache_key(@url), @redis_key_ttl, txt, (err, result) =>
                   @emit "crawled", txt
                   @parse txt
