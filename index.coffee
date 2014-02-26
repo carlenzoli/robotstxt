@@ -168,11 +168,11 @@ class RobotsTxt extends EventEmitter
         # console.log "GETTING #{this.cache_key(@url)}"
         @redis_instance.get this.cache_key(@url), (err, result) =>
           if not err and result?
-            console.log "cached"
+            # console.log "cached"
             @emit "crawled", result
             @parse result
           else
-            console.log "downloaded"
+            # console.log "downloaded"
             @crawl()
       else
         @crawl()
@@ -201,7 +201,7 @@ class RobotsTxt extends EventEmitter
               txt=txtA.join ''
               # console.log "SETTING #{this.cache_key(@url)}"
               if @redis_instance
-                console.log "TTL: #{@redis_key_ttl}"
+                # console.log "TTL: #{@redis_key_ttl}"
                 @redis_instance.setex this.cache_key(@url), @redis_key_ttl, txt, (err, result) =>
                   @emit "crawled", txt
                   @parse txt
@@ -367,7 +367,7 @@ class RobotsTxt extends EventEmitter
       @emit "error", 'gatekeeper is '+ typeof myGateKeeper
 
 createRobotsTxt = (url, redis_instance, redis_namespace, redis_key_ttl, user_agent = 'Mozilla/5.0 (compatible; Open-Source-Coffee-Script-Robots-Txt-Checker/2.1; +http://example.com/bot.html)') ->
-  new RobotsTxt(url, redis_instance, redis_namespace, redis_key_ttl, user_agent)
+  new RobotsTxt(url, redis_instance, (redis_namespace / 1000), redis_key_ttl, user_agent)
 
 
 module.exports = createRobotsTxt
