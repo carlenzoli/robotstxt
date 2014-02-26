@@ -222,9 +222,11 @@
           this.redis_instance.get(this.cache_key(this.url), (function(_this) {
             return function(err, result) {
               if (!err && (result != null)) {
+                console.log("cached");
                 _this.emit("crawled", result);
                 return _this.parse(result);
               } else {
+                console.log("downloaded");
                 return _this.crawl();
               }
             };
@@ -280,6 +282,7 @@
             res.on("end", function() {
               txt = txtA.join('');
               if (_this.redis_instance) {
+                console.log(_this.redis_key_ttl);
                 return _this.redis_instance.setex(_this.cache_key(_this.url), _this.redis_key_ttl, txt, function(err, result) {
                   _this.emit("crawled", txt);
                   return _this.parse(txt);
