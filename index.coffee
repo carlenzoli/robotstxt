@@ -161,12 +161,24 @@ class RobotsTxt extends EventEmitter
   txtA = []
 
   rm = @
-  constructor: (@url, @user_agent="a coffee GateKeeper") ->
-    #console.dir(@);
+  constructor: (@url, @redis_instance, @redis_namespace, @redis_key_ttl, @user_agent="a coffee GateKeeper") ->
     if @url
       @uri = parseUri(@url)
-      @crawl()
+      if @redis_instance
+        # console.log "GETTING #{this.cache_key(@url)}"
+        @redis_instance.get this.cache_key(@url), (err, result) =>
+          if not err and result?
+            # console.log "cached"
+            @emit "crawled", result
+            @parse result
+          else
+            # console.log "downloaded"
+            @crawl()
+      else
+        @crawl()
 
+  cache_key: (uri) ->
+    "#{@redis_namespace}:#{uri}"
 
   crawl: (protocol=@uri.protocol, host=@uri.host, port=@uri.port, path=@uri.path,  user_agent=@user_agent, encoding='utf8') =>
     txt = ''
@@ -187,8 +199,14 @@ class RobotsTxt extends EventEmitter
               txtA.push chunk
             res.on "end", =>
               txt=txtA.join ''
-              @emit "crawled", txt
-              @parse txt
+              # console.log "SETTING #{this.cache_key(@url)}"
+              if @redis_instance
+                @redis_instance.setex this.cache_key(@url), @redis_key_ttl, txt, (err, result) =>
+                  @emit "crawled", txt
+                  @parse txt
+              else
+                @emit "crawled", txt
+                @parse txt
             null
         else
             @emit "error", new Error 'invalid status code - is: HTTP '+res.statusCode+' - should: HTTP 200'
@@ -244,7 +262,7 @@ class RobotsTxt extends EventEmitter
             #if this is the first group section, create a new gatekeeper
             if not myGateKeeper
               #console.log('NEW GATEKEEPER')
-              delete myGateKeeper
+              myGateKeeper = null
               myGateKeeper = new GateKeeper(@user_agent)
               
 
@@ -347,8 +365,8 @@ class RobotsTxt extends EventEmitter
     else
       @emit "error", 'gatekeeper is '+ typeof myGateKeeper
 
-createRobotsTxt = (url, user_agent = 'Mozilla/5.0 (compatible; Open-Source-Coffee-Script-Robots-Txt-Checker/2.1; +http://example.com/bot.html)') ->
-  new RobotsTxt(url, user_agent)
+createRobotsTxt = (url, redis_instance, redis_namespace, redis_key_ttl, user_agent = 'Mozilla/5.0 (compatible; Open-Source-Coffee-Script-Robots-Txt-Checker/2.1; +http://example.com/bot.html)') ->
+  new RobotsTxt(url, redis_instance, redis_namespace, redis_key_ttl, user_agent)
 
 
 module.exports = createRobotsTxt
